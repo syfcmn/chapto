@@ -1,5 +1,41 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
+type Profile = {
+  username: string;
+  uuid: string;
+  public_key: string;
+  private_key: string;
+};
+
+type SessionStatus = "pending" | "active";
+
+type Session = {
+  session_id: string;
+  name: string;
+  status: SessionStatus;
+  created_at: string;
+  peer_uuid?: string;
+  peer_username?: string;
+  peer_public_key?: string;
+};
+
+type Message = {
+  sender_uuid: string;
+  recipient_uuid: string;
+  body: string;
+  encoded: string;
+  timestamp: string;
+};
+
+type State = {
+  profile: Profile;
+  sessions: Record<string, Session>;
+  messages: Record<string, Message[]>;
+  savedAt?: number;
+};
+
+type PacketPayload = Record<string, any>;
+
 const PACKET_PREFIX = "CT1";
 const VERSION = 1;
 const STORAGE_PREFIX = "chapto.web.v1";
@@ -11,7 +47,7 @@ const decoder = new TextDecoder();
 
 const nowIso = () => new Date().toISOString().replace(".000Z", "Z");
 
-const b64urlEncode = (bytes) => {
+const b64urlEncode = (bytes: Uint8Array) => {
   let binary = "";
   bytes.forEach((b) => {
     binary += String.fromCharCode(b);
@@ -20,21 +56,21 @@ const b64urlEncode = (bytes) => {
   return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 };
 
-const b64urlDecode = (text) => {
+const b64urlDecode = (text: string) => {
   const padded = text.replace(/-/g, "+").replace(/_/g, "/");
   const pad = "=".repeat((4 - (padded.length % 4)) % 4);
   const binary = atob(padded + pad);
   return Uint8Array.from(binary, (char) => char.charCodeAt(0));
 };
 
-const encodePacket = (payload) => {
+const encodePacket = (payload: PacketPayload) => {
   const raw = JSON.stringify(payload);
   const compressed = window.pako.deflate(raw, { level: 9 });
   const packed = b64urlEncode(compressed);
   return `${PACKET_PREFIX}.${packed}`;
 };
 
-const decodePacket = (text) => {
+const decodePacket = (text: string) => {
   if (!text.startsWith(`${PACKET_PREFIX}.`)) {
     throw new Error("Not a chapto packet");
   }
@@ -48,7 +84,7 @@ const decodePacket = (text) => {
   return data;
 };
 
-const sessionCard = (profile, sessionId, sessionName, note) => {
+const sessionCard = (profile: Profile, sessionId: string, sessionName: string, note?: string) => {
   const payload = {
     v: VERSION,
     t: "S",
@@ -62,7 +98,7 @@ const sessionCard = (profile, sessionId, sessionName, note) => {
   return encodePacket(payload);
 };
 
-const sessionAck = (profile, sessionId, sessionName) => {
+const sessionAck = (profile: Profile, sessionId: string, sessionName?: string) => {
   const payload = {
     v: VERSION,
     t: "A",
@@ -75,7 +111,13 @@ const sessionAck = (profile, sessionId, sessionName) => {
   return encodePacket(payload);
 };
 
-const messagePacket = (sessionId, senderUuid, recipientUuid, nonce, ciphertext) =>
+const messagePacket = (
+  sessionId: string,
+  senderUuid: string,
+  recipientUuid: string,
+  nonce: string,
+  ciphertext: string
+) =>
   encodePacket({
     v: VERSION,
     t: "M",
@@ -86,10 +128,10 @@ const messagePacket = (sessionId, senderUuid, recipientUuid, nonce, ciphertext) 
     c: ciphertext,
   });
 
-const stateKey = (uuid) => `${STATE_PREFIX}${uuid}`;
+const stateKey = (uuid: string) => `${STATE_PREFIX}${uuid}`;
 
-const listAccounts = () => {
-  const accounts = [];
+const listAccounts = (): Profile[] => {
+  const accounts: Profile[] = [];
   for (let i = 0; i < localStorage.length; i += 1) {
     const key = localStorage.key(i);
     if (!key || !key.startsWith(STATE_PREFIX)) continue;
@@ -105,7 +147,7 @@ const listAccounts = () => {
   return accounts;
 };
 
-const loadState = (uuid) => {
+const loadState = (uuid?: string) => {
   let selectedKey = uuid ? stateKey(uuid) : null;
   if (!selectedKey) {
     const active = localStorage.getItem(ACTIVE_KEY);
@@ -135,13 +177,13 @@ const loadState = (uuid) => {
   return createAccount();
 };
 
-const saveState = (nextState) => {
+const saveState = (nextState: State) => {
   nextState.savedAt = Date.now();
   localStorage.setItem(stateKey(nextState.profile.uuid), JSON.stringify(nextState));
   localStorage.setItem(ACTIVE_KEY, nextState.profile.uuid);
 };
 
-const deleteAccount = (uuid) => {
+const deleteAccount = (uuid: string) => {
   localStorage.removeItem(stateKey(uuid));
   const active = localStorage.getItem(ACTIVE_KEY);
   if (active === uuid) localStorage.removeItem(ACTIVE_KEY);
@@ -156,7 +198,7 @@ const generateKeypair = () => {
   };
 };
 
-const generateProfile = (username) => {
+const generateProfile = (username?: string) => {
   const name = username && username.trim() ? username.trim() : `user-${window.sodium.to_hex(window.sodium.randombytes_buf(3))}`;
   const keypair = generateKeypair();
   return {
@@ -167,7 +209,7 @@ const generateProfile = (username) => {
   };
 };
 
-const ensureState = (raw) => {
+const ensureState = (raw: State) => {
   const profile = raw.profile || {};
   if (!profile.public_key || !profile.private_key) {
     const keypair = generateKeypair();
@@ -180,7 +222,7 @@ const ensureState = (raw) => {
   return raw;
 };
 
-const createAccount = (username) => {
+const createAccount = (username?: string) => {
   const profile = generateProfile(username);
   const nextState = {
     profile,
@@ -192,9 +234,9 @@ const createAccount = (username) => {
   return nextState;
 };
 
-const sessionSalt = (sessionId) => encoder.encode(sessionId);
+const sessionSalt = (sessionId: string) => encoder.encode(sessionId);
 
-const deriveSessionKey = async (sharedSecret, saltBytes) => {
+const deriveSessionKey = async (sharedSecret: Uint8Array, saltBytes: Uint8Array) => {
   const key = await crypto.subtle.importKey("raw", sharedSecret, "HKDF", false, ["deriveBits"]);
   const bits = await crypto.subtle.deriveBits(
     {
@@ -209,7 +251,7 @@ const deriveSessionKey = async (sharedSecret, saltBytes) => {
   return new Uint8Array(bits);
 };
 
-const encryptMessage = async (plaintext, sharedKey) => {
+const encryptMessage = async (plaintext: string, sharedKey: Uint8Array) => {
   const nonce = window.sodium.randombytes_buf(12);
   const cipher = window.sodium.crypto_aead_chacha20poly1305_ietf_encrypt(
     encoder.encode(plaintext),
@@ -221,7 +263,7 @@ const encryptMessage = async (plaintext, sharedKey) => {
   return { nonce: b64urlEncode(nonce), ciphertext: b64urlEncode(cipher) };
 };
 
-const decryptMessage = async (nonceB64, cipherB64, sharedKey) => {
+const decryptMessage = async (nonceB64: string, cipherB64: string, sharedKey: Uint8Array) => {
   const nonce = b64urlDecode(nonceB64);
   const data = b64urlDecode(cipherB64);
   const plaintext = window.sodium.crypto_aead_chacha20poly1305_ietf_decrypt(
@@ -234,13 +276,13 @@ const decryptMessage = async (nonceB64, cipherB64, sharedKey) => {
   return decoder.decode(plaintext);
 };
 
-const x25519SharedSecret = async (privateB64, peerPublicB64) => {
+const x25519SharedSecret = async (privateB64: string, peerPublicB64: string) => {
   const privateKey = b64urlDecode(privateB64);
   const publicKey = b64urlDecode(peerPublicB64);
   return window.sodium.crypto_scalarmult(privateKey, publicKey);
 };
 
-const copyText = async (text) => {
+const copyText = async (text: string) => {
   try {
     if (navigator.clipboard && window.isSecureContext) {
       await navigator.clipboard.writeText(text);
@@ -265,28 +307,28 @@ const copyText = async (text) => {
   }
 };
 
-const getPreview = (encoded) => (encoded.length > 64 ? `${encoded.slice(0, 64)}...` : encoded);
+const getPreview = (encoded: string) => (encoded.length > 64 ? `${encoded.slice(0, 64)}...` : encoded);
 
-const sortSessions = (sessions) =>
+const sortSessions = (sessions: Record<string, Session>) =>
   Object.values(sessions).sort((a, b) => (a.created_at || "").localeCompare(b.created_at || ""));
 
 export default function App() {
-  const [appState, setAppState] = useState(null);
-  const appStateRef = useRef(null);
-  const [currentSessionId, setCurrentSessionId] = useState(null);
+  const [appState, setAppState] = useState<State | null>(null);
+  const appStateRef = useRef<State | null>(null);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [status, setStatus] = useState("");
-  const [selectedAccountUuid, setSelectedAccountUuid] = useState(null);
+  const [selectedAccountUuid, setSelectedAccountUuid] = useState<string | null>(null);
   const [showSessionModal, setShowSessionModal] = useState(false);
   const [showAccountsModal, setShowAccountsModal] = useState(false);
   const [showCopyModal, setShowCopyModal] = useState(false);
   const [showIdentityModal, setShowIdentityModal] = useState(false);
-  const [copyMessage, setCopyMessage] = useState(null);
+  const [copyMessage, setCopyMessage] = useState<Message | null>(null);
 
-  const sessionInputRef = useRef(null);
-  const messageInputRef = useRef(null);
-  const sessionNameRef = useRef(null);
-  const accountUsernameRef = useRef(null);
-  const messageListRef = useRef(null);
+  const sessionInputRef = useRef<HTMLTextAreaElement | null>(null);
+  const messageInputRef = useRef<HTMLTextAreaElement | null>(null);
+  const sessionNameRef = useRef<HTMLInputElement | null>(null);
+  const accountUsernameRef = useRef<HTMLInputElement | null>(null);
+  const messageListRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     appStateRef.current = appState;
@@ -307,7 +349,7 @@ export default function App() {
     messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
   }, [appState, currentSessionId]);
 
-  const updateState = (nextState, nextSessionId) => {
+  const updateState = (nextState: State, nextSessionId?: string | null) => {
     setAppState(nextState);
     if (typeof nextSessionId !== "undefined") {
       setCurrentSessionId(nextSessionId);
@@ -341,7 +383,7 @@ export default function App() {
     setStatus(copied ? "Session request packet copied" : "Session request packet generated (clipboard unavailable)");
   };
 
-  const handleRemoveSession = (sessionId, name) => {
+  const handleRemoveSession = (sessionId: string, name: string) => {
     if (!appStateRef.current) return;
     const nextState = { ...appStateRef.current };
     nextState.sessions = { ...nextState.sessions };
@@ -381,7 +423,7 @@ export default function App() {
     }
   };
 
-  const encodeAndStore = async (plaintext) => {
+  const encodeAndStore = async (plaintext: string) => {
     const current = appStateRef.current;
     if (!current) return;
     const session = currentSessionId ? current.sessions[currentSessionId] : null;
@@ -418,7 +460,7 @@ export default function App() {
     setStatus(copied ? "Encoded packet copied to clipboard" : "Encoded packet ready (clipboard unavailable)");
   };
 
-  const decodePacketText = async (packet, allowSession) => {
+  const decodePacketText = async (packet: string, allowSession: boolean) => {
     let payload;
     try {
       payload = decodePacket(packet);
@@ -538,6 +580,7 @@ export default function App() {
   };
 
   const handleSwitchAccount = () => {
+    if (!appState) return;
     const statusNode = document.getElementById("account-status");
     if (!selectedAccountUuid) {
       if (statusNode) statusNode.textContent = "Select an account to switch";
@@ -566,6 +609,7 @@ export default function App() {
   };
 
   const handleRemoveAccount = () => {
+    if (!appState) return;
     const statusNode = document.getElementById("account-status");
     if (!selectedAccountUuid) {
       if (statusNode) statusNode.textContent = "Select an account to remove";
@@ -583,7 +627,7 @@ export default function App() {
   if (!appState) {
     return (
       <div className="loading">
-        <div className="loading-card">Loading chapto��</div>
+        <div className="loading-card">Loading chapto...</div>
       </div>
     );
   }
@@ -639,7 +683,7 @@ export default function App() {
                     handleRemoveSession(session.session_id, session.name);
                   }}
                 >
-                  ✕
+                  x
                 </button>
               </div>
             ))}
